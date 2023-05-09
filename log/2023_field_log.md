@@ -35,3 +35,12 @@ Plot 7 finished and cross referenced with Jessie's demography data. Less Trilliu
 
 ## April 22, 2023
 No data collection; rainy day and prep for return to Lubbock/EGU.
+
+## May 04, 2023
+Finally made it out to field after a week of rain. Trails are slick and not safe for traversing with Licors. Spoke with Nick on phone and we discussed only doing 3 plots (3, 5, 7) due to tons of Trillium replication across plots. Made decision to move on to Maianthemum for the same plots (similar sampling effort required to finish plots) for next two days as they are fully expanded and the upper canopy is about to close.
+
+## May 05, 2023
+Made it out to plot 5 successfully with Licors. Less abundant Maianthemum in this plot, so opting to finish plot and collect Multispeq data before moving on to plot 3. Plot 3 also finished today, as rain is in forecast for Sunday. Pushing to finish Maianthemum tomorrow at plot 7 for ~80 Maianthemum curves spread across two days. Some issues with Stan on retaining VPD between curves (humid day)
+
+## May 06, 2023
+Finished plot 7 with ~36 curves. Sunny day. Made some decisions about not doing curves that were directly underneath maple and beech seedlings. Plot 7 has interesting secondary sub-canopy with seedlings where leaves are fully expanded, mimicking open canopy of upper canopy space. Made note of some individuals that were measured under seedlings (~3 individuals) as I suspect these may need to be removed during analyses. Full plot finished today (~40 curves) and Maianthemum is totally finished before the canopy closed!
