@@ -26,13 +26,15 @@ spp.meta <- read.csv("../log/TT_tag_metadata.csv") %>%
 spp.meta[146,] <- c("5073", "Mai", 7, 36, "invaded")
 spp.meta[147,] <- c("9412", "Mai", 3, 3, "weeded")
 
+# Load garlic mustard density data measured by Jessie
+gm.density <- read.csv("../data/TT23_GM_density_counts_JM.csv")
+
 # Add keep row delimiter to remove points
 licor.data$keep.row <- "yes"
 
-###############################################################################
-## Load custom fxns
-###############################################################################
-source("/Users/eaperkowski/git/r_functions/temp_standardize.R")
+# Load custom fxn for stomatal limitation of photosynthesis
+source("../../r_functions/stomatal_limitation.R")
+
 
 ###############################################################################
 ## Plot 3: Trillium
@@ -1308,12 +1310,14 @@ aci.coefs[134,] <- c(id = "652", spp = "Mai", plot = "7", timepoint = "pre_closu
 ###############################################################################
 ## Snapshot measures at start of each curve
 ###############################################################################
+
+
 snapshot <- licor.data %>%
   mutate(id = ifelse(id == "2131" & is.na(machine), "2131_tri", id),
          id = ifelse(id == "2131" & machine == "stan", "2131_mai", id)) %>%
   group_by(id) %>%
   filter(row_number() == 1 & id != "392") %>%
-  dplyr::select(id, machine, anet = A, ci = Ci, ca = Ca, co2_ref = CO2_r, gsw) %>%
+  dplyr::select(id, machine, anet = A, ci = Ci, ca = Ca, co2_ref = CO2_r, gsw, Tleaf) %>%
   mutate(ci.ca = ci / ca,
          iwue = anet / gsw) %>%
   filter(id != "4714_b" & id!= "6578" & id != "6578_a" & id != "5479b" & 
@@ -1333,35 +1337,37 @@ aci.coefs$plot <- as.numeric(aci.coefs$plot)
 spp.meta$plot <- as.numeric(spp.meta$plot)
 
 
-
+###############################################################################
+## Merge snapshot measures with curve coefficients, then add plot and subplot
+## information 
+###############################################################################
 pre.canopy.merged <- snapshot %>%
   full_join(aci.coefs, by = "id") %>%
   mutate(plot = as.numeric(plot),
          jmax.vcmax = as.numeric(Vcmax) / as.numeric(Jmax),
-         rd.vcmax = as.numeric(Rd) / as.numeric(Vcmax)) %>%
+         rd.vcmax = as.numeric(Rd) / as.numeric(Vcmax),
+         stomatal_limitation(A_net = as.numeric(anet),
+                             Vcmax = as.numeric(Vcmax),
+                             Rd.meas = TRUE,
+                             Rd = as.numeric(Rd),
+                             leaf.temp = Tleaf,
+                             temp = "C")[5]) %>%
   filter(id != "425" & id != 4630) %>%
   full_join(spp.meta, by = c("id", "plot")) %>%
+  mutate(subplot = as.numeric(subplot)) %>%
+  full_join(gm.density, by = c("plot", "subplot")) %>%
   filter(!is.na(anet)) %>%
-  select(id, machine, plot, subplot, gm.trt, timepoint, spp = spp.x,
-         anet, gsw, ci.ca, iwue, vcmax = Vcmax, jmax = Jmax, rd = Rd, 
-         jmax.vcmax, rd.vcmax)
+  mutate(gm.rosette.dens = ifelse(is.na(GM_rosettes), 0, GM_rosettes),
+         gm.adult.dens = ifelse(is.na(GM_adults), 0, GM_adults),
+         gm.total.dens = sum(gm.rosette.dens, gm.adult.dens)) %>%
+  dplyr::select(id, machine, plot, subplot, gm.trt, gm.rosette.dens, gm.adult.dens,
+         gm.total.dens, timepoint, spp = spp.x, anet, gsw, ci.ca, iwue, 
+         stom.lim = l, vcmax = Vcmax, jmax = Jmax, rd = Rd, jmax.vcmax, rd.vcmax)
 
-library(tidyverse)
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = as.numeric(vcmax))) +
-  geom_boxplot(aes(fill = spp))
+write.csv(pre.canopy.merged, "../data/TT23_pre_closure_phys_data.csv",
+          row.names = FALSE)
 
 
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = as.numeric(jmax))) +
-  geom_boxplot(aes(fill = spp))
 
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = jmax.vcmax)) +
-  geom_boxplot(aes(fill = spp))
 
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = ci.ca)) +
-  geom_boxplot(aes(fill = spp))
 
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = iwue)) +
-  geom_boxplot(aes(fill = spp))
-
-ggplot(data = pre.canopy.merged, aes(x = gm.trt, y = rd.vcmax)) +
-  geom_boxplot(aes(fill = spp))
