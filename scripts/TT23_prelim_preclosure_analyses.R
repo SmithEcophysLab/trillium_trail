@@ -1,7 +1,9 @@
 ## Load libraries
 library(tidyverse)
+library(ggpubr)
 library(lme4)
 library(car)
+library(emmeans)
 library(multcomp)
 library(MuMIn)
 library(glmmTMB)
@@ -26,11 +28,34 @@ outlierTest(vcmax)
 
 # Model output
 summary(vcmax)
-Anova(test.vcmax)
+Anova(vcmax)
 r.squaredGLMM(vcmax)
 
 # Post-hoc comparisons
 emmeans(vcmax, pairwise~spp, type = "response")
+
+# Create compact letters for plot
+vcmax.letters <- cld(emmeans(vcmax, pairwise~gm.trt*spp), Letters = LETTERS) %>%
+  mutate(.group = trimws(.group, which = "both")) %>% data.frame()
+
+## Create plot
+vcmax.cat <- ggplot(data = df, 
+                    aes(x = gm.trt, y = vcmax, fill = spp)) +
+  geom_boxplot(alpha = 0.75) +
+  geom_point(shape = 21, size = 2, alpha = 0.75, 
+             position = position_jitterdodge(jitter.width = 0.1, 
+                                             dodge.width = 0.75)) +
+  geom_text(data = vcmax.letters, aes(y = 200, label = .group),
+            position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, 200)) +
+  labs(x = "Garlic mustard treatment", 
+       y = expression(bold("V"["cmax25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+vcmax.cat
+
 
 ##############################################################################
 ## Jmax
@@ -55,9 +80,38 @@ r.squaredGLMM(jmax)
 # Post-hoc comparisons
 emmeans(jmax, pairwise~spp)
 
+# Create compact letters for plot
+jmax.letters <- cld(emmeans(jmax, pairwise~gm.trt*spp), Letters = LETTERS) %>%
+  mutate(.group = trimws(.group, which = "both")) %>% data.frame()
+
+## Create plot
+jmax.cat <- ggplot(data = df, 
+                    aes(x = gm.trt, y = jmax, fill = spp)) +
+  geom_boxplot(alpha = 0.75) +
+  geom_point(shape = 21, size = 2, alpha = 0.75, 
+             position = position_jitterdodge(jitter.width = 0.1, 
+                                             dodge.width = 0.75)) +
+  geom_text(data = jmax.letters, aes(y = 300, label = .group),
+            position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 75)) +
+  labs(x = "Garlic mustard treatment", 
+       y = expression(bold("J"["max25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+jmax.cat
 
 ##############################################################################
-## Jmax
+## Write plot for Vcmax and Jmax
+##############################################################################
+png("../figs/TT23_preclosure_photo.png", width = 12, height = 4.5, units = "in",
+    res = 600)
+ggarrange(vcmax.cat, jmax.cat, ncol = 2, common.legend = TRUE, legend = "right")
+dev.off()
+
+##############################################################################
+## Jmax:Vcmax
 ##############################################################################
 df$jmax.vcmax[91] <- NA
 
@@ -129,6 +183,28 @@ r.squaredGLMM(gsw)
 cld(emmeans(gsw, pairwise~spp*gm.trt, type = "response"), Letters = LETTERS)
 ## GM invasion decreases gsw, but only in Maianthemum
 
+# Create compact letters for plot
+gsw.letters <- cld(emmeans(gsw, pairwise~gm.trt*spp), Letters = LETTERS) %>%
+  mutate(.group = trimws(.group, which = "both")) %>% data.frame()
+
+## Create plot
+gsw.cat <- ggplot(data = df, 
+                    aes(x = gm.trt, y = gsw, fill = spp)) +
+  geom_boxplot(alpha = 0.75) +
+  geom_point(shape = 21, size = 2, alpha = 0.75, 
+             position = position_jitterdodge(jitter.width = 0.1, 
+                                             dodge.width = 0.75)) +
+  geom_text(data = gsw.letters, aes(y = 0.3, label = .group),
+            position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, 0.3)) +
+  labs(x = "Garlic mustard treatment", 
+       y = expression(bold("g"["sw"]*" (mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+gsw.cat
+
 ##############################################################################
 ## iwue
 ##############################################################################
@@ -153,97 +229,35 @@ r.squaredGLMM(iwue)
 cld(emmeans(iwue, pairwise~spp*gm.trt, type = "response"), Letters = LETTERS)
 ## GM invasion increases water use efficiency, but only in Maianthemum
 
-##############################################################################
-## Stomatal limitation
-##############################################################################
-df$stom.lim[df$stom.lim > 1 | df$stom.lim < 0] <- NA
+# Create compact letters for plot
+iwue.letters <- cld(emmeans(iwue, pairwise~gm.trt*spp), Letters = LETTERS) %>%
+  mutate(.group = trimws(.group, which = "both")) %>% data.frame()
 
-stom.lim <- lmer(log(stom.lim) ~ gm.trt * spp + (1 | plot), data = df)
-
-# Check model assumptions
-plot(stom.lim)
-qqnorm(residuals(stom.lim))
-qqline(residuals(stom.lim))
-densityPlot(residuals(stom.lim))
-shapiro.test(residuals(stom.lim))
-outlierTest(stom.lim)
-
-# Model output
-summary(stom.lim)
-Anova(stom.lim)
-r.squaredGLMM(stom.lim)
-
-# Post-hoc comparisons
-emmeans(stom.lim, pairwise~spp, type = "response")
-## Greater stomatal limitation in Trillium
-
-##############################################################################
-## Energetic cost of maintaining carboxylation
-##############################################################################
-rd.vcmax <- lmer(rd.vcmax ~ gm.trt * spp + (1 | plot), data = df)
-
-# Check model assumptions
-plot(rd.vcmax)
-qqnorm(residuals(rd.vcmax))
-qqline(residuals(rd.vcmax))
-densityPlot(residuals(rd.vcmax))
-shapiro.test(residuals(rd.vcmax))
-outlierTest(rd.vcmax)
-
-# Model output
-summary(rd.vcmax)
-Anova(rd.vcmax)
-r.squaredGLMM(rd.vcmax)
-
-# Post-hoc comparisons
-emmeans(rd.vcmax, pairwise~spp, type = "response")
-## Greater costs of maintaining carboxylation in Trillium (likely just driven
-## by greater Vcmax)
-
-##############################################################################
-## Categorical treatment plots
-##############################################################################
-## Vcmax categorical
-vcmax.cat <- ggplot(data = df, 
-                    aes(x = gm.trt, y = vcmax, fill = spp)) +
+## Create plot
+iwue.cat <- ggplot(data = df, 
+                  aes(x = gm.trt, y = iwue, fill = spp)) +
   geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
+  geom_point(shape = 21, size = 2, alpha = 0.75, 
              position = position_jitterdodge(jitter.width = 0.1, 
                                              dodge.width = 0.75)) +
+  geom_text(data = iwue.letters, aes(y = 150, label = .group),
+            position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, 150)) +
   labs(x = "Garlic mustard treatment", 
-       y = expression(bold("V"["cmax"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       y = expression(bold("iWUE ("*mu*"mol"*" mol"^"-1"*")")),
        fill = "Species", color = "Species") +
   theme_bw(base_size = 18) +
   theme(axis.title = element_text(face = "bold"),
         legend.title = element_text(face = "bold"))
+iwue.cat
 
-jmax.cat <- ggplot(data = df, 
-                   aes(x = gm.trt, y = jmax, fill = spp)) +
-  geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
-             position = position_jitterdodge(jitter.width = 0.1, 
-                                             dodge.width = 0.75)) +
-  labs(x = "Garlic mustard treatment", 
-       y = expression(bold("J"["max"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
-       fill = "Species", color = "Species") +
-  theme_bw(base_size = 18) +
-  theme(axis.title = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"))
-
-cica.cat <- ggplot(data = df, 
-                   aes(x = gm.trt, y = ci.ca, fill = spp)) +
-  geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
-             position = position_jitterdodge(jitter.width = 0.1, 
-                                             dodge.width = 0.75)) +
-  scale_y_continuous(limits = c(0.45, 0.9), breaks = seq(0.5, 0.9, 0.1)) +
-  labs(x = "Garlic mustard treatment", 
-       y = expression(bold("C"["i"]*": C"["a"]*" (unitless)")),
-       fill = "Species", color = "Species") +
-  theme_bw(base_size = 18) +
-  theme(axis.title = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"))
-
+##############################################################################
+## Write plot for gsw and iWUE
+##############################################################################
+png("../figs/TT23_preclosure_waterUse.png", width = 12, height = 4.5, units = "in",
+    res = 600)
+ggarrange(gsw.cat, iwue.cat, ncol = 2, common.legend = TRUE, legend = "right")
+dev.off()
 
 ##############################################################################
 ##############################################################################
@@ -263,14 +277,12 @@ cica.cat <- ggplot(data = df,
 # mixed effect model is used.
 
 
-
-
 ##############################################################################
 ## Zero-inflated GLMM for Vcmax
 ##############################################################################
 df$vcmax[c(20, 34)] <- NA
 
-vcmax.gmdens <- lmer(log(vcmax) ~ gm.total.dens * spp + (1 | plot), data = df)
+vcmax.gmdens <- lmer(sqrt(vcmax) ~ gm.total.dens * spp + (1 | plot), data = df)
 
 # Check model assumptions
 plot(vcmax.gmdens)
@@ -289,11 +301,36 @@ r.squaredGLMM(vcmax.gmdens)
 emmeans(vcmax.gmdens, pairwise~spp, type = "response")
 test(emtrends(vcmax.gmdens, ~spp, "gm.total.dens", type = "response"))
 
+# Model predictions across range in x-axis values for plotting
+vcmax.gmdens.trend <- emmeans(vcmax.gmdens, ~spp, "gm.total.dens", 
+                              type = "response", 
+                              at = list(gm.total.dens = seq(0,164, 1))) %>%
+  data.frame() %>% mutate(linetype = ifelse(spp == "Mai", "solid", "dashed"))
+
+# Plot
+vcmax.gmdens.plot <- ggplot(data = df, aes(x = gm.total.dens, y = vcmax, fill = spp)) +
+  geom_jitter(shape = 21, size = 3, alpha = 0.75) +
+  geom_ribbon(data = vcmax.gmdens.trend, aes(y = response, ymin = lower.CL,
+                                             ymax = upper.CL), alpha = 0.25) +
+  geom_smooth(data = vcmax.gmdens.trend, aes(y = response, color = spp, 
+                                             linetype = linetype), size = 2) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  labs(x = "Garlic mustard subplot density", 
+       y = expression(bold("V"["cmax25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  guides(linetype = "none") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+vcmax.gmdens.plot
+
+
 ##############################################################################
 ## Zero-inflated GLMM for Jmax
 ##############################################################################
-jmax.gmdens <- lmer(jmax ~ gm.total.dens * spp + (1 | plot), data = df)
+df$jmax[18] <- NA
 
+jmax.gmdens <- lmer(log(jmax) ~ gm.total.dens * spp + (1 | plot), data = df)
 
 # Check model assumptions
 plot(jmax.gmdens)
@@ -311,31 +348,82 @@ r.squaredGLMM(jmax.gmdens)
 # Post-hoc comparisons
 test(emtrends(jmax.gmdens, ~spp, "gm.total.dens"))
 
+# Model predictions across range in x-axis values for plotting
+jmax.gmdens.trend <- emmeans(jmax.gmdens, ~spp, "gm.total.dens", 
+                              type = "response", 
+                              at = list(gm.total.dens = seq(0, 164, 1))) %>%
+  data.frame() %>% mutate(linetype = ifelse(spp == "Mai", "solid", "dashed"))
+
+# Plot
+jmax.gmdens.plot <- ggplot(data = df, aes(x = gm.total.dens, y = jmax, fill = spp)) +
+  geom_jitter(shape = 21, size = 3, alpha = 0.75) +
+  geom_ribbon(data = jmax.gmdens.trend, aes(y = response, ymin = lower.CL,
+                                             ymax = upper.CL), alpha = 0.25) +
+  geom_smooth(data = jmax.gmdens.trend, 
+              aes(y = response, color = spp, linetype = linetype), size = 2) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  labs(x = "Garlic mustard subplot density", 
+       y = expression(bold("J"["max25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  guides(linetype = "none") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+jmax.gmdens.plot
+
 ##############################################################################
-## Zero-inflated GLMM for Ci:Ca
+## Write plot for Vcmax and Jmax
 ##############################################################################
-cica.gmdens <- lmer(ci.ca ~ gm.total.dens * spp + (1 | plot), data = df)
+png("../figs/TT23_preclosure_photo_continuous.png", 
+    width = 12, height = 4.5, units = "in", res = 600)
+ggarrange(vcmax.gmdens.plot, jmax.gmdens.plot, ncol = 2, common.legend = TRUE, 
+          legend = "right", align = "hv")
+dev.off()
+
+##############################################################################
+## Zero-inflated GLMM for gsw
+##############################################################################
+gsw.gmdens <- lmer(sqrt(gsw) ~ gm.total.dens * spp + (1 | plot),  data = df)
 
 # Check model assumptions
-plot(cica.gmdens)
-qqnorm(residuals(cica.gmdens))
-qqline(residuals(cica.gmdens))
-densityPlot(residuals(cica.gmdens))
-shapiro.test(residuals(cica.gmdens))
-outlierTest(cica.gmdens)
+plot(gsw.gmdens)
+qqnorm(residuals(gsw.gmdens))
+qqline(residuals(gsw.gmdens))
+densityPlot(residuals(gsw.gmdens))
+shapiro.test(residuals(gsw.gmdens))
+outlierTest(gsw.gmdens)
 
 # Model output
-summary(cica.gmdens)
-Anova(cica.gmdens)
-r.squaredGLMM(cica.gmdens)
+summary(gsw.gmdens)
+Anova(gsw.gmdens)
+r.squaredGLMM(gsw.gmdens)
 
 # Post-hoc comparisons
-test(emtrends(cica.gmdens, ~spp, "gm.total.dens"))
+test(emtrends(gsw.gmdens, ~spp, "gm.total.dens"))
+
+# Model predictions across range in x-axis values for plotting
+gsw.gmdens.trend <- emmeans(gsw.gmdens, ~spp, "gm.total.dens", 
+                             type = "response", 
+                             at = list(gm.total.dens = seq(0, 164, 1))) %>%
+  data.frame()
+
+# Plot
+gsw.gmdens.plot <- ggplot(data = df, aes(x = gm.total.dens, y = gsw, fill = spp)) +
+  geom_jitter(shape = 21, size = 3, alpha = 0.75) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  labs(x = "Garlic mustard subplot density", 
+       y = expression(bold("g"["sw"]*" (mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  guides(linetype = "none") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+gsw.gmdens.plot
 
 ##############################################################################
 ## Zero-inflated GLMM for iWUE
 ##############################################################################
-iwue.gmdens <- lmer(iwue ~ gm.total.dens * spp + (1 | plot), data = df)
+iwue.gmdens <- lmer(log(iwue) ~ gm.total.dens * spp + (1 | plot), data = df)
 
 # Check model assumptions
 plot(iwue.gmdens)
@@ -351,28 +439,43 @@ Anova(iwue.gmdens)
 r.squaredGLMM(iwue.gmdens)
 
 # Post-hoc comparisons
-test(emtrends(iwue.gmdens, ~spp, "gm.total.dens"))
+test(emtrends(iwue.gmdens, ~spp, "gm.total.dens", type = "response"))
+
+# Model predictions across range in x-axis values for plotting
+iwue.gmdens.trend <- emmeans(iwue.gmdens, ~spp, "gm.total.dens", 
+                            type = "response", 
+                            at = list(gm.total.dens = seq(0, 164, 1))) %>%
+  data.frame() %>% mutate(linetype = ifelse(spp == "Mai", "solid", "dashed"))
+
+# Plot
+iwue.gmdens.plot <- ggplot(data = df, aes(x = gm.total.dens, y = iwue, fill = spp)) +
+  geom_jitter(shape = 21, size = 3, alpha = 0.75) +
+  geom_ribbon(data = iwue.gmdens.trend, aes(y = response, ymin = lower.CL,
+                                            ymax = upper.CL), alpha = 0.25) +
+  geom_smooth(data = iwue.gmdens.trend, 
+              aes(y = response, color = spp, linetype = linetype), size = 2) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  scale_y_continuous(limits = c(0, 150)) +
+  labs(x = "Garlic mustard subplot density", 
+       y = expression(bold("iWUE ("*mu*"mol"*" mol"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  guides(linetype = "none") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+iwue.gmdens.plot
 
 ##############################################################################
-## Rd:Vcmax regressed against GM total density
+## Write plot for Vcmax and Jmax
 ##############################################################################
-rd.vcmax.gmdens <- lmer(rd.vcmax ~ gm.total.dens * spp + (1 | plot), data = df)
+png("../figs/TT23_preclosure_waterUsage_continuous.png", 
+    width = 12, height = 4.5, units = "in", res = 600)
+ggarrange(gsw.gmdens.plot, iwue.gmdens.plot, ncol = 2, common.legend = TRUE, 
+          legend = "right", align = "hv")
+dev.off()
 
-# Check model assumptions
-plot(rd.vcmax.gmdens)
-qqnorm(residuals(rd.vcmax.gmdens))
-qqline(residuals(rd.vcmax.gmdens))
-densityPlot(residuals(rd.vcmax.gmdens))
-shapiro.test(residuals(rd.vcmax.gmdens))
-outlierTest(rd.vcmax.gmdens)
 
-# Model output
-summary(rd.vcmax.gmdens)
-Anova(rd.vcmax.gmdens)
-r.squaredGLMM(rd.vcmax.gmdens)
 
-# Post-hoc comparisons
-emmeans(rd.vcmax.gmdens, pairwise~spp)
 
 ##############################################################################
 ## Stomatal limitation regressed against GM total density
@@ -395,51 +498,6 @@ r.squaredGLMM(stom.lim.gmdens)
 # Post-hoc comparisons
 emmeans(stom.lim.gmdens, pairwise~spp)
 test(emtrends(stom.lim.gmdens, ~spp, "gm.total.dens"))
-
-##############################################################################
-## Visualize broad patterns due to garlic mustard treatment
-##############################################################################
-
-## Vcmax categorical
-vcmax.cat <- ggplot(data = df, 
-       aes(x = gm.trt, y = vcmax, fill = spp)) +
-  geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
-             position = position_jitterdodge(jitter.width = 0.1, 
-                                             dodge.width = 0.75)) +
-  labs(x = "Garlic mustard treatment", 
-       y = expression(bold("V"["cmax"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
-       fill = "Species", color = "Species") +
-  theme_bw(base_size = 18) +
-  theme(axis.title = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"))
-
-jmax.cat <- ggplot(data = df, 
-                    aes(x = gm.trt, y = jmax, fill = spp)) +
-  geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
-             position = position_jitterdodge(jitter.width = 0.1, 
-                                             dodge.width = 0.75)) +
-  labs(x = "Garlic mustard treatment", 
-       y = expression(bold("J"["max"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
-       fill = "Species", color = "Species") +
-  theme_bw(base_size = 18) +
-  theme(axis.title = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"))
-
-cica.cat <- ggplot(data = df, 
-                   aes(x = gm.trt, y = ci.ca, fill = spp)) +
-  geom_boxplot(alpha = 0.75) +
-  geom_point(shape = 21, size = 3, alpha = 0.75, 
-             position = position_jitterdodge(jitter.width = 0.1, 
-                                             dodge.width = 0.75)) +
-  scale_y_continuous(limits = c(0.45, 0.9), breaks = seq(0.5, 0.9, 0.1)) +
-  labs(x = "Garlic mustard treatment", 
-       y = expression(bold("C"["i"]*": C"["a"]*" (unitless)")),
-       fill = "Species", color = "Species") +
-  theme_bw(base_size = 18) +
-  theme(axis.title = element_text(face = "bold"),
-        legend.title = element_text(face = "bold"))
 
 
 
