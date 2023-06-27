@@ -95,8 +95,39 @@ write.csv(merged_curves, "../data/TT23_licor_merged_pre_closure.csv",
           row.names = FALSE)
 
 
+###############################################################################
+## Load co2 response curve data files for second field campaign
+###############################################################################
+stan_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_stan")
+# write.csv(stan_0612, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-12_co2resp_stan.csv",
+#           row.names = FALSE)
 
+yadi_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_yadi")
+# write.csv(yadi_0612, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-12_co2resp_yadi.csv",
+#           row.names = FALSE)
 
+stan_0613 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-13_co2resp_stan")
+# write.csv(stan_0613, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-13_co2resp_stan.csv",
+#           row.names = FALSE)
 
+yadi_0613 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-13_co2resp_yadi")
+# write.csv(yadi_0613, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-13_co2resp_yadi.csv",
+#           row.names = FALSE)
+
+stan_0614 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-14_co2resp_stan")
+# write.csv(stan_0614, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-14_co2resp_stan.csv",
+#           row.names = FALSE)
+
+yadi_0614 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-14_co2resp_yadi")
+# write.csv(yadi_0614, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-14_co2resp_yadi.csv",
+#           row.names = FALSE)
+
+stan_0615 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-15_co2resp_stan")
+# write.csv(stan_0615, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-15_co2resp_stan.csv",
+#           row.names = FALSE)
+
+yadi_0615 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-15_co2resp_yadi")
+# write.csv(yadi_0615, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-15_co2resp_yadi.csv",
+#           row.names = FALSE)
 
 
