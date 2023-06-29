@@ -9,14 +9,18 @@ library(MuMIn)
 library(glmmTMB)
 
 ## Read in compiled curve fit file
-df <- read.csv("../data/TT23_pre_closure_phys_data.csv") %>%
-  mutate(gm.trt = factor(gm.trt, levels = c("weeded", "invaded")))
+df <- read.csv("../data/TT23_phys_data_long.csv") %>%
+  mutate(gm.trt = factor(gm.trt, levels = c("weeded", "invaded")),
+         canopy = factor(canopy, levels = c("pre_closure", "post_closure")))
 head(df)
 
 ##############################################################################
-## Vcmax regressed against garlic mustard total density (rosettes + adults)
+## Vcmax regressed against garlic mustard treatment and canopy openness
 ##############################################################################
-vcmax <- lmer(log(vcmax) ~ gm.trt * spp + (1 | plot), data = df)
+df$vcmax25[225] <- NA
+
+vcmax <- lmer(log(vcmax25) ~ gm.trt * spp * canopy + (1 | plot), 
+              data = subset(df, spp != "Ari"))
 
 # Check model assumptions
 plot(vcmax)
@@ -32,15 +36,17 @@ Anova(vcmax)
 r.squaredGLMM(vcmax)
 
 # Post-hoc comparisons
-emmeans(vcmax, pairwise~spp, type = "response")
+cld(emmeans(vcmax, pairwise~spp*canopy, type = "response"))
+cld(emmeans(vcmax, pairwise~canopy, type = "response"))
+
 
 # Create compact letters for plot
-vcmax.letters <- cld(emmeans(vcmax, pairwise~gm.trt*spp), Letters = LETTERS) %>%
+vcmax.letters <- cld(emmeans(vcmax, pairwise~canopy*spp), Letters = LETTERS) %>%
   mutate(.group = trimws(.group, which = "both")) %>% data.frame()
 
 ## Create plot
-vcmax.cat <- ggplot(data = df, 
-                    aes(x = gm.trt, y = vcmax, fill = spp)) +
+vcmax.cat <- ggplot(data = subset(df, spp != "Ari"), 
+                    aes(x = canopy, y = vcmax25, fill = spp)) +
   geom_boxplot(alpha = 0.75) +
   geom_point(shape = 21, size = 2, alpha = 0.75, 
              position = position_jitterdodge(jitter.width = 0.1, 
@@ -48,7 +54,65 @@ vcmax.cat <- ggplot(data = df,
   geom_text(data = vcmax.letters, aes(y = 200, label = .group),
             position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
   scale_y_continuous(limits = c(0, 200)) +
-  labs(x = "Garlic mustard treatment", 
+  scale_x_discrete(labels = c("Open", "Closed")) +
+  labs(x = "Canopy status", 
+       y = expression(bold("V"["cmax25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
+       fill = "Species", color = "Species") +
+  theme_bw(base_size = 18) +
+  theme(axis.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"))
+vcmax.cat
+
+##############################################################################
+## Vcmax regressed against subplot GM densitiy and canopy openness
+##############################################################################
+df$vcmax25[c(20, 225)] <- NA
+
+vcmax.cont <- lmer(log(vcmax25) ~ total_subplot * spp * canopy + (1 | plot), 
+              data = subset(df, spp != "Ari"))
+
+# Check model assumptions
+plot(vcmax.cont)
+qqnorm(residuals(vcmax.cont))
+qqline(residuals(vcmax.cont))
+densityPlot(residuals(vcmax.cont))
+shapiro.test(residuals(vcmax.cont))
+outlierTest(vcmax.cont)
+
+# Model output
+summary(vcmax.cont)
+Anova(vcmax.cont)
+r.squaredGLMM(vcmax.cont)
+
+# Post-hoc comparisons
+test(emtrends(vcmax.cont, ~spp*canopy, "total_subplot"))
+
+
+
+# Create compact letters for plot
+vcmax.trend <- emmeans(vcmax.cont, ~total_subplot*spp*canopy, 
+                       at = list(total_subplot = seq(0, 145, 1)),
+                       type = "response") %>% data.frame() %>%
+  mutate(linetype = ifelse(spp == "Mai" & canopy == "pre_closure",
+                           "solid", "dashed"))
+vcmax.trend
+
+## Create plot
+vcmax.cat <- ggplot(data = subset(df, spp != "Ari"), 
+                    aes(x = total_subplot, y = vcmax25, fill = spp)) +
+  geom_point(aes(shape = canopy), size = 2, alpha = 0.75) +
+  geom_smooth(data = vcmax.trend, 
+              aes(y = response, linetype = linetype, color = spp)) +
+  facet_grid(~canopy)
+  geom_boxplot(alpha = 0.75) +
+  geom_point(shape = 21, size = 2, alpha = 0.75, 
+             position = position_jitterdodge(jitter.width = 0.1, 
+                                             dodge.width = 0.75)) +
+  geom_text(data = vcmax.letters, aes(y = 200, label = .group),
+            position = position_dodge(width = 0.75), size = 5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, 200)) +
+  scale_x_discrete(labels = c("Open", "Closed")) +
+  labs(x = "Canopy status", 
        y = expression(bold("V"["cmax25"]*" ("*mu*"mol"*" m"^"-2"*" s"^"-1"*")")),
        fill = "Species", color = "Species") +
   theme_bw(base_size = 18) +
@@ -57,12 +121,16 @@ vcmax.cat <- ggplot(data = df,
 vcmax.cat
 
 
+
+
+
 ##############################################################################
 ## Jmax
 ##############################################################################
-df$jmax[20] <- NA
+df$jmax25[c(20, 178)] <- NA
 
-jmax <- lmer(jmax ~ gm.trt * spp + (1 | plot), data = df)
+jmax <- lmer(log(jmax25) ~ total_subplot * spp * canopy + (1 | plot), 
+             data = subset(df, spp != "Ari"))
 
 # Check model assumptions
 plot(jmax)
@@ -78,7 +146,14 @@ Anova(jmax)
 r.squaredGLMM(jmax)
 
 # Post-hoc comparisons
-emmeans(jmax, pairwise~spp)
+test(emtrends(jmax, ~spp*canopy, "total_subplot"))
+
+
+cld(emtrends(jmax, 
+             
+             
+             
+             pairwise~total_subplot*spp*canopy))
 
 # Create compact letters for plot
 jmax.letters <- cld(emmeans(jmax, pairwise~gm.trt*spp), Letters = LETTERS) %>%

@@ -94,16 +94,19 @@ merged_curves <- lapply(file.list, read.csv) %>%
 write.csv(merged_curves, "../data/TT23_licor_merged_pre_closure.csv",
           row.names = FALSE)
 
-
 ###############################################################################
 ## Load co2 response curve data files for second field campaign
 ###############################################################################
-stan_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_stan")
+stan_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_stan.txt")
 # write.csv(stan_0612, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-12_co2resp_stan.csv",
 #           row.names = FALSE)
 
 yadi_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_yadi")
 # write.csv(yadi_0612, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-12_co2resp_yadi.csv",
+#           row.names = FALSE)
+
+alb_0612 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-12_co2resp_albert")
+# write.csv(alb_0612, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-12_co2resp_albert.csv",
 #           row.names = FALSE)
 
 stan_0613 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-13_co2resp_stan")
@@ -114,12 +117,20 @@ yadi_0613 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-13_c
 # write.csv(yadi_0613, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-13_co2resp_yadi.csv",
 #           row.names = FALSE)
 
+alb_0613 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-13_co2resp_albert")
+# write.csv(alb_0613, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-13_co2resp_albert.csv",
+#           row.names = FALSE)
+
 stan_0614 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-14_co2resp_stan")
 # write.csv(stan_0614, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-14_co2resp_stan.csv",
 #           row.names = FALSE)
 
 yadi_0614 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-14_co2resp_yadi")
 # write.csv(yadi_0614, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-14_co2resp_yadi.csv",
+#           row.names = FALSE)
+
+alb_0614 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-14_co2resp_albert")
+# write.csv(alb_0614, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-14_co2resp_albert.csv",
 #           row.names = FALSE)
 
 stan_0615 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-15_co2resp_stan")
@@ -130,4 +141,27 @@ yadi_0615 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-15_c
 # write.csv(yadi_0615, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-15_co2resp_yadi.csv",
 #           row.names = FALSE)
 
+alb_0615 <- licorData("../licor_data/licor_raw/post_canopy_closure/2023-06-15_co2resp_albert")
+# write.csv(alb_0615, "../licor_data/licor_cleaned/post_canopy_closure/2023-06-15_co2resp_albert.csv",
+#           row.names = FALSE)
 
+###############################################################################
+## Curve-fitting prep
+###############################################################################
+file.list2 <- list.files(path = "../licor_data/licor_cleaned/post_canopy_closure",
+                        recursive = TRUE, pattern = "\\.csv$",
+                        full.names = TRUE)
+
+file.list2 <- setNames(file.list, stringr::str_extract(basename(file.list), 
+                                                      '.*(?=\\.csv)'))
+
+# Merge list of data frames, arrange by machine, measurement type, id, and time elapsed
+merged_curves2 <- lapply(file.list, read.csv) %>%
+  reshape::merge_all() %>%
+  mutate(date = lubridate::ymd_hms(date)) %>%
+  arrange(machine, date, id)
+
+# Write .csv file that compiles all licor data for Trillium and Maianthemum
+# collected before canopy closure
+write.csv(merged_curves2, "../data/TT23_licor_merged_post_closure.csv",
+          row.names = FALSE)
